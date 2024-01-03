@@ -5,12 +5,23 @@ import threading
 import os
 
 
-def ssh_connect(hostname, username, password):
-    client = paramiko.SSHClient()
-    client.load_system_host_keys()
-    client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-    client.connect(hostname, username=username, password=password)
-    return client
+def ssh_connect(hostname, username, password, max_attempts=3):
+    attempt = 1
+    while attempt <= max_attempts:
+        print(f"Tentativa {attempt} de conectar em {hostname}...")
+        try:
+            client = paramiko.SSHClient()
+            client.load_system_host_keys()
+            client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+            client.connect(hostname, username=username, password=password)
+            print(f"Conexão estabelecida com sucesso em {hostname}.")
+            return client
+        except Exception as e:
+            print(f"Não foi possível estabelecer conexão em {hostname}. Erro: {e}")
+            attempt += 1
+
+    raise Exception(f"Excedeu o número máximo de tentativas de conexão em {hostname}.")
+
 
 def run_command(client, command):
     channel = client.invoke_shell()
@@ -43,16 +54,18 @@ def get_next_suffix(suffix_file):
 
 def main():
     # Verificar se o número correto de argumentos foi fornecido
-    if len(sys.argv) != 2:
-        print("Uso: python script.py <sufixo>")
+    if len(sys.argv) != 3:
+        print("Uso: python script.py <modelo> <sufixo>")
         sys.exit(1)
 
     # Obter o sufixo e senha a partir dos argumentos de linha de comando
-    sufixo = sys.argv[1]
+    modelo = sys.argv[1]
+    sufixo = sys.argv[2]
+    caminho_destino = sys.argv[2]
     password = 'IddqdIdkfa'
 
     # Informações de conexão SSH
-    hostname = f'sp-gw-f290-v1-{sufixo}'
+    hostname = f'sp-{modelo}-f290-v1-{sufixo}'
     username = 'pi'
 
     # Comando a ser executado via nc
@@ -85,7 +98,14 @@ def main():
         # Obter o sufixo crescente
         suffix_count = get_next_suffix(suffix_file)
 
-        output_filename = f'{suffix_file}{suffix_count}.txt'
+        # Construir o caminho completo do diretório
+        output_directory = os.path.join(caminho_destino, str(modelo))
+
+        # Criar o diretório se não existir
+        os.makedirs(output_directory, exist_ok=True)
+
+        # output_filename = f'{suffix_file}{suffix_count}.txt'
+        output_filename = os.path.join(caminho_destino, f'{suffix_file}{suffix_count}.txt')
 
         # Concatenar chunks e salvar a saída em um arquivo
         with open(output_filename, 'w') as output_file:
