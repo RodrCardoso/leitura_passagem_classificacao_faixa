@@ -45,7 +45,7 @@ def get_next_suffix(suffix_file):
         with open(suffix_file, "r") as file:
             count = int(file.read().strip())
     else:
-        count = 0
+        count = 1
 
     with open(suffix_file, "w") as file:
         file.write(str(count + 1))
@@ -94,18 +94,19 @@ def main():
 
         # Aguardar até que a thread termine
         output_thread.join()
-        suffix_file = f'sls_{sufixo}_passagem_'
-        # Obter o sufixo crescente
-        suffix_count = get_next_suffix(suffix_file)
 
         # Construir o caminho completo do diretório
-        output_directory = os.path.join(caminho_destino, str(modelo))
+        output_directory = os.path.join(caminho_destino)
 
         # Criar o diretório se não existir
         os.makedirs(output_directory, exist_ok=True)
 
+        suffix_file = os.path.join(caminho_destino, f'sls_{sufixo}_passagem_')
+        # Obter o sufixo crescente
+        suffix_count = get_next_suffix(suffix_file)
+
         # output_filename = f'{suffix_file}{suffix_count}.txt'
-        output_filename = os.path.join(caminho_destino, f'{suffix_file}{suffix_count}.txt')
+        output_filename = f'{suffix_file}{suffix_count}.txt'
 
         # Concatenar chunks e salvar a saída em um arquivo
         with open(output_filename, 'w') as output_file:
